@@ -135,6 +135,7 @@ GameObject:
   - component: {fileID: 66153016}
   - component: {fileID: 66153017}
   - component: {fileID: 66153018}
+  - component: {fileID: 66153019}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -168,7 +169,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 505f3dfccad73f74780615c43351e1fb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  simulationService: {fileID: 66153017}
+  simulationService: {fileID: 66153019}
   renderService: {fileID: 66153018}
   simulationSpace: {fileID: 1980476037}
   settings: {fileID: 11400000, guid: 8f8cf85c37555f943be74baa7c181b16, type: 2}
@@ -181,7 +182,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 66153014}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0bb72eeeae82d784bb8753e168760018, type: 3}
   m_Name: 
@@ -204,6 +205,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aeb5f5165d8b9e0478524137aff9781d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  manager: {fileID: 66153016}
+  simulationSpace: {fileID: 1980476037}
+--- !u!114 &66153019
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 66153014}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9fb08bb856cdf7498caf0a27e9906e5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sslProtocols: -1
+  wsAddress: ws://localhost:8080/ws
   manager: {fileID: 66153016}
 --- !u!1 &713217874
 GameObject:
@@ -426,6 +443,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3150a317eec6e344c88b0c58c6ed8b8c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  baseRadius: 0.25
+  baseMass: 1
   manager: {fileID: 66153016}
   cameraInput: {fileID: 1709034470}
   velocityLine: {fileID: 1709034472}

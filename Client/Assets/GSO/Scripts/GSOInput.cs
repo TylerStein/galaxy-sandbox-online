@@ -27,13 +27,14 @@ namespace GSO
                 placing = true;
                 velocityLine.enabled = true;
             } else if (Input.GetButtonUp("Fire1") && placing) {
+                Vector2 vel = Vector2.ClampMagnitude((Vector2)cameraInput.lastWorldMouse - placeStart, manager.settings.maxVelocity);
                 BodyData data = new BodyData() {
                     i = "",
-                    p = placeStart,
-                    v = Vector2.ClampMagnitude((Vector2)cameraInput.lastWorldMouse - placeStart, manager.settings.maxVelocity),
+                    p = new float[] { placeStart.x, placeStart.y },
+                    v = new float[] { vel.x, vel.y },
                     r = baseRadius,
                     c = "#FFFFFF",
-                    t = "",
+                    t = "default",
                     m = baseMass,
                 };
 

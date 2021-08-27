@@ -43,7 +43,8 @@ func readSimulationStateUpdate(simState *sim.SimulationState, output chan []byte
 	defer simState.Mu.Unlock()
 	simState.Mu.Lock()
 
-	body, err := json.Marshal(simState.Bodies)
+	bodyList := sim.BodyDataList{D: simState.Bodies}
+	body, err := json.Marshal(bodyList)
 	if err != nil {
 		fmt.Println(err)
 		output <- make([]byte, 0)

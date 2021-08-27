@@ -57,9 +57,9 @@ namespace GSO
                     if (i == j) continue;
                     forces += CalculateForces(
                         gravitationalConstant,
-                        physicsBodies[i].p,
+                        physicsBodies[i].pvec,
                         physicsBodies[i].m,
-                        physicsBodies[j].p,
+                        physicsBodies[i].pvec,
                         physicsBodies[j].m
                     );
 
@@ -67,16 +67,16 @@ namespace GSO
                 }
 
                 // Add total forces
-                physicsBodies[i].v += (forces / physicsBodies[i].m) * deltaTime;
+                physicsBodies[i].vvec = physicsBodies[i].vvec + (forces / physicsBodies[i].m) * deltaTime;
             }
 
             toRemove.Clear();
 
             // Update positions
             for (int i = 0; i < physicsBodies.Count; i++) {
-                physicsBodies[i].p += physicsBodies[i].v * deltaTime;
+                physicsBodies[i].pvec = physicsBodies[i].pvec + physicsBodies[i].vvec * deltaTime;
 
-                float delta = Vector2.Distance(Vector2.zero, physicsBodies[i].p);
+                float delta = Vector2.Distance(Vector2.zero, physicsBodies[i].pvec);
                 if (delta > distanceBounds) {
                     toRemove.Add(physicsBodies[i]);
                     //physicsBodies[i].p = Vector2.zero;
@@ -92,7 +92,7 @@ namespace GSO
                     if (i == j) continue;
                     if (toRemove.Contains(physicsBodies[j])) continue;
 
-                    Vector2 diff = physicsBodies[i].p - physicsBodies[j].p;
+                    Vector2 diff = physicsBodies[i].pvec - physicsBodies[j].pvec;
                     if (physicsBodies[i].r > physicsBodies[j].r) {
                         if (diff.magnitude < physicsBodies[i].r) {
                             // i bigger
@@ -117,7 +117,7 @@ namespace GSO
         public void Absorb(BodyData self, BodyData other) {
             self.r += other.r * 0.5f;
             self.m += other.m * 0.5f;
-            self.v += other.v * 0.5f;
+            self.vvec = self.vvec + (other.vvec * 0.5f);
         }
 
         public Vector2 CalculateForces(float g, Vector2 p1, float m1, Vector2 p2, float m2) {

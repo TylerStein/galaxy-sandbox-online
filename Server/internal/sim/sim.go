@@ -32,6 +32,10 @@ func CreateEmptySimulationState(maxBodies int, g float32, maxVelocity float32, b
 	}
 }
 
+type BodyDataList struct {
+	D []BodyData `json:"d"`
+}
+
 type BodyData struct {
 	I string     `json:"i"`
 	P mgl32.Vec2 `json:"p"`
@@ -82,7 +86,7 @@ func StartSimulation(state *SimulationState, delay time.Duration, quit chan bool
 
 func AddSimulationBody(simState *SimulationState, body BodyData) {
 	if len(simState.Bodies) >= cap(simState.Bodies)-1 {
-		fmt.Printf("Ignoring added simulation body due to full capacity")
+		fmt.Println("Ignoring added simulation body due to full capacity")
 		return
 	}
 
@@ -159,7 +163,7 @@ func UpdateSimulationState(simState *SimulationState, deltaTime float32) {
 
 	if len(toRemoveMap) > 0 {
 		// create a new array with bodies removed
-		remainingBodies := make([]BodyData, blen-len(toRemoveMap))
+		remainingBodies := make([]BodyData, blen-len(toRemoveMap), cap(simState.Bodies))
 		idx := 0
 		for i := 0; i < blen; i++ {
 			// skip entires in the remove set

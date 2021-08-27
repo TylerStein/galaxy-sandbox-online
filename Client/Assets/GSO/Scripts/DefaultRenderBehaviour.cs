@@ -73,7 +73,7 @@ namespace GSO
 
         private void UpdateWrapper(RenderBodyWrapper wrapper) {
             wrapper.gameObject.transform.localScale = new Vector3(wrapper.data.r, wrapper.data.r, 1f);
-            wrapper.gameObject.transform.position = wrapper.data.p;
+            wrapper.gameObject.transform.position = wrapper.data.pvec;
             wrapper.spriteRenderer.color = ParseColor(wrapper.data.c);
         }
 

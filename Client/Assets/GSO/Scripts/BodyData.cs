@@ -1,6 +1,11 @@
 using UnityEngine;
 using System.Text;
-using UnityEngine;
+
+[System.Serializable]
+public class BodyDataList
+{
+    [SerializeField] public BodyData[] d;
+}
 
 [System.Serializable]
 public class BodyData
@@ -15,12 +20,28 @@ public class BodyData
     /// <summary>
     /// Position
     /// </summary>
-    [SerializeField] public Vector2 p;
+    [SerializeField] public float[] p;
+
+    public Vector2 pvec {
+        get => new Vector2(p[0], p[1]);
+        set {
+            p[0] = value.x;
+            p[1] = value.y;
+        }
+    }
 
     /// <summary>
     /// Velocity
     /// </summary>
-    [SerializeField] public Vector2 v;
+    [SerializeField] public float[] v;
+
+    public Vector2 vvec {
+        get => new Vector2(v[0], v[1]);
+        set {
+            v[0] = value.x;
+            v[1] = value.y;
+        }
+    }
 
     /// <summary>
     /// Mass

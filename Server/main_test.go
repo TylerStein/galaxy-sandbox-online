@@ -52,7 +52,7 @@ func TestSimulationReadUpdate(t *testing.T) {
 	output := make(chan []byte)
 	go readSimulationStateUpdate(state, output)
 
-	updatedBodies := make([]sim.BodyData, 0)
+	updatedBodies := sim.BodyDataList{}
 	data := <-output
 
 	err := json.Unmarshal(data, &updatedBodies)
@@ -60,7 +60,7 @@ func TestSimulationReadUpdate(t *testing.T) {
 		t.Fatalf("Error trying to unmarshal BodyJson list: %v", err)
 	}
 
-	if state.Bodies[0].I != (updatedBodies)[0].I {
-		t.Errorf("Updated BodyData list 0 has ID %v, expected %v", (updatedBodies)[0].I, state.Bodies[0].I)
+	if state.Bodies[0].I != updatedBodies.D[0].I {
+		t.Errorf("Updated BodyData list 0 has ID %v, expected %v", updatedBodies.D[0].I, state.Bodies[0].I)
 	}
 }
