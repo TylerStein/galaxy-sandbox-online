@@ -46,7 +46,10 @@ namespace GSO
             // 1 -> 10 scale
             float distanceScale = (camera.orthographicSize / maxOrthoSize) * 10f;
 
-            if (Input.GetButtonDown("Spawn")) {
+            bool mouseActive = cameraInput.lastScreenMousePosition.x > 0 && cameraInput.lastScreenMousePosition.x < Screen.width
+                    && cameraInput.lastScreenMousePosition.y > 0 && cameraInput.lastScreenMousePosition.y < Screen.height;
+
+            if (Input.GetButtonDown("Spawn") && mouseActive) {
                 placeStart = cameraInput.lastWorldMouse;
                 placing = true;
                 velocityLine.enabled = true;
@@ -100,24 +103,28 @@ namespace GSO
                 Vector2 move = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
                 MoveCamera(move * Time.deltaTime * moveSpeed * distanceScale);
 
-                float scrollInputA = Input.GetAxis("Zoom");
-                float scrollInputB = Input.mouseScrollDelta.y;
-                if (Mathf.Abs(scrollInputA) > Mathf.Abs(scrollInputB)) {
-                    ZoomCamera(scrollInputA * Time.deltaTime * -zoomSpeed * distanceScale, cameraInput.lastWorldMouse);
-                } else {
-                    ZoomCamera(scrollInputB * Time.deltaTime * -zoomSpeed * distanceScale, cameraInput.lastWorldMouse);
+                if (mouseActive) {
+                    float scrollInputA = Input.GetAxis("Zoom");
+                    float scrollInputB = Input.mouseScrollDelta.y;
+                    if (Mathf.Abs(scrollInputA) > Mathf.Abs(scrollInputB)) {
+                        ZoomCamera(scrollInputA * Time.deltaTime * -zoomSpeed * distanceScale, cameraInput.lastWorldMouse);
+                    } else {
+                        ZoomCamera(scrollInputB * Time.deltaTime * -zoomSpeed * distanceScale, cameraInput.lastWorldMouse);
+                    }
                 }
             }
         }
 
         public void ZoomCamera(float zoom, Vector2 target) {
             if (zoom == 0) return;
+            float newZoom = Mathf.Clamp(camera.orthographicSize + zoom, minOrthoSize, maxOrthoSize);
 
-            Vector2 dir = ((Vector2)camera.transform.position - target).normalized * zoomTowardsStrength * zoom;
-            camera.transform.position += (Vector3)dir;
+            if (newZoom > minOrthoSize && newZoom < maxOrthoSize) {
+                Vector2 dir = ((Vector2)camera.transform.position - target).normalized * zoomTowardsStrength * zoom;
+                camera.transform.position += (Vector3)dir;
 
-            zoom = Mathf.Clamp(camera.orthographicSize + zoom, minOrthoSize, maxOrthoSize);
-            camera.orthographicSize = zoom;
+                camera.orthographicSize = newZoom;
+            }
         }
 
         public void MoveCamera(Vector3 move) {

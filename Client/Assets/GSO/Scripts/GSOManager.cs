@@ -61,7 +61,9 @@ namespace GSO
 
         public void SetSimulationService(bool online) {
             simulationService.Deactivate();
+            simulationService.enabled = false;
             useOnline = online;
+            simulationService.enabled = true;
             simulationService.Activate();
         }
     }

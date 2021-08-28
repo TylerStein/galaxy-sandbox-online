@@ -3,7 +3,8 @@ using UnityEngine;
 using UnityEngine.Events;
 using System;
 using System.Text;
-using WebSocketSharp;
+
+using HybridWebSocket;
 // using Utf8Json;
 
 using System.Security.Authentication;
@@ -28,11 +29,32 @@ namespace GSO
         private int playerCount = 1;
         private int bodyCount = 0;
 
+        private bool pendingConnectNotify = false;
+        private bool pendingTryReconnect = false;
+
+        public void Update() {
+            if (pendingConnectNotify) {
+                pendingConnectNotify = false;
+                ConnectionEvent.Invoke();
+            }
+
+            if (pendingTryReconnect) {
+                pendingTryReconnect = false;
+                StartCoroutine(TryReconnectRoutine());
+            }
+        }
+
+        public void OnDestroy() {
+            if (websocket != null && websocket.GetState() == WebSocketState.Open) {
+                websocket.Close();
+            }
+        }
+
         public override void Activate() {
             if (websocket == null) {
                 Debug.Log("Creating websocket");
-                websocket = new WebSocket(wsAddress);
-                websocket.WaitTime = TimeSpan.FromSeconds(30);
+                websocket = WebSocketFactory.CreateInstance(wsAddress, sslProtocols);
+               // websocket.WaitTime = TimeSpan.FromSeconds(30);
             }
 
             websocket.OnOpen += onEvent_wsOpen;
@@ -40,13 +62,18 @@ namespace GSO
             websocket.OnError += onEvent_wsError;
             websocket.OnMessage += onEvent_wsMessage;
 
-            websocket.SslConfiguration.EnabledSslProtocols = sslProtocols;
             Connect();
         }
 
         public override void Deactivate() {
             if (websocket != null) {
-                websocket.Close();
+                if (websocket.GetState() == WebSocketState.Open || websocket.GetState() == WebSocketState.Connecting) {
+                    try {
+                        websocket.Close();
+                    } catch (Exception e) {
+                        Debug.LogError(e);
+                    }
+                }
                 websocket.OnOpen -= onEvent_wsOpen;
                 websocket.OnClose -= onEvent_wsClose;
                 websocket.OnError -= onEvent_wsError;
@@ -60,15 +87,24 @@ namespace GSO
         }
 
         public void Connect() {
-            websocket.Connect();
+            if (websocket != null) {
+                WebSocketState state = websocket.GetState();
+                Debug.Log("Connect Websocket with state " + state.ToString());
+                if (state != WebSocketState.Open) {
+                    websocket.Connect();
+                }
+            }
         }
 
         public override void ReActivate() {
             lastBodyData = new BodyData[0];
             playerCount = 0;
             bodyCount = 0;
-            websocket.Close();
-            StartCoroutine(TryReconnectRoutine());
+            if (websocket != null && websocket.GetState() == WebSocketState.Closed) {
+                Connect();
+            } else {
+                StartCoroutine(TryReconnectRoutine());
+            }
         }
 
         public override void AddBody(BodyData data) {
@@ -80,7 +116,7 @@ namespace GSO
         }
 
         public override bool IsReady() {
-            return websocket != null && websocket.IsAlive;
+            return websocket != null && websocket.GetState() == WebSocketState.Open;
         }
 
         public override void ReadBodies(out BodyData[] bodies) {
@@ -99,30 +135,31 @@ namespace GSO
             }
         }
 
-        private void onEvent_wsOpen(object sender, EventArgs args) {
+        private void onEvent_wsOpen() {
             Debug.Log("Websocket Open");
-            ConnectionEvent.Invoke();
+            pendingConnectNotify = true;
         }
 
-        private void onEvent_wsClose(object sender, EventArgs args) {
-            Debug.Log("Websocket Closed");
-            ConnectionEvent.Invoke();
-            StartCoroutine(TryReconnectRoutine());
+        private void onEvent_wsClose(WebSocketCloseCode code) {
+            Debug.Log("Websocket Closed with Code " + code);
+            pendingConnectNotify = true;
+            pendingTryReconnect = true;
         }
 
-        private void onEvent_wsError(object sender, ErrorEventArgs args) {
-            Debug.LogError(args.Message);
+        private void onEvent_wsError(string errMsg) {
+            Debug.LogError(errMsg);
             connErrCode = 500;
             connErrMessage = "Websocket error";
         }
 
 
-        private void onEvent_wsMessage(object sender, MessageEventArgs args) {
+        private void onEvent_wsMessage(byte[] msg) {
             try {
                 // BodyData[] data = JsonSerializer.Deserialize<BodyData[]>(args.Data);
-                FrameData data = JsonUtility.FromJson<FrameData>(args.Data);
+                string msgString = Encoding.UTF8.GetString(msg);
+                FrameData data = JsonUtility.FromJson<FrameData>(msgString);
                 lastBodyData = data.d;
-                playerCount = data.p; // todo
+                playerCount = data.p;
                 bodyCount = lastBodyData.Length;
             } catch (Exception e) {
                 Debug.LogError(e);
@@ -134,7 +171,7 @@ namespace GSO
         private IEnumerator TryReconnectRoutine() {
             yield return new WaitForSeconds(1);
 
-            if (websocket == null || websocket.IsAlive) {
+            if (websocket == null || websocket.GetState() == WebSocketState.Open) {
                 Debug.Log("Skipping retry, already connected or websocket null");
             } else {
                 Debug.Log("Retrying connection");
@@ -148,6 +185,12 @@ namespace GSO
 
         public override int GetObjectCount() {
             return bodyCount;
+        }
+        public void OnDrawGizmos() {
+            Gizmos.color = Color.green;
+            foreach (BodyData body in lastBodyData) {
+                Gizmos.DrawWireSphere(body.pvec, body.r);
+            }
         }
     }
 }

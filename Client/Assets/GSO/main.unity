@@ -1280,6 +1280,7 @@ MonoBehaviour:
   scaleStep: 0.1
   minScale: 0.15
   maxScale: 2
+  zoomTowardsStrength: 1
   cameraZ: -10
   camera: {fileID: 970953300}
   manager: {fileID: 66153016}

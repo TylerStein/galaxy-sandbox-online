@@ -15,7 +15,7 @@ import (
 
 const DefaultMaxBodies = int64(512)
 const DefaultMaxClients = int64(50)
-const DefaultMaxVelocity = float64(10)
+const DefaultMaxVelocity = float64(3.5)
 const DefaultMaxBounds = float64(100)
 const DefaultGravity = float64(2)
 

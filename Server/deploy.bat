@@ -6,6 +6,6 @@ gcloud run deploy galaxy-sandbox-online ^
 --region us-central1 ^
 --set-env-vars "MAX_BODIES=512" ^
 --set-env-vars "MAX_CLIENTS=50" ^
---set-env-vars "MAX_VELOCITY=3" ^
+--set-env-vars "MAX_VELOCITY=3.5" ^
 --set-env-vars "MAX_BOUNDS=100" ^
 --set-env-vars "GRAVITY=2"
