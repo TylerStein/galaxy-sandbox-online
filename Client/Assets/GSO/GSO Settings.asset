@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ca1d96d182f93f248b93e2b0b7935581, type: 3}
   m_Name: GSO Settings
   m_EditorClassIdentifier: 
-  maxVelocity: 100
+  maxVelocity: 3
   targetFramerate: 60

@@ -2,9 +2,10 @@ using UnityEngine;
 using System.Text;
 
 [System.Serializable]
-public class BodyDataList
+public class FrameData
 {
     [SerializeField] public BodyData[] d;
+    [SerializeField] public int p;
 }
 
 [System.Serializable]
@@ -59,9 +60,9 @@ public class BodyData
     [SerializeField] public string c;
 
     /// <summary>
-    /// Texture
+    /// Texture (Index)
     /// </summary>
-    [SerializeField] public string t;
+    [SerializeField] public int t;
 
     //public void Append(StringBuilder sb) {
     //    sb.Append(i)

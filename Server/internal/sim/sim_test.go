@@ -62,8 +62,8 @@ func TestUpdatePhysicsBodiesVelocity(t *testing.T) {
 		V: mgl32.Vec2{0, 0},
 		M: 1,
 		R: 1,
-		C: "#000000",
-		T: "default",
+		C: "#FFFFFF",
+		T: 0,
 	}
 
 	simState := &SimulationState{
@@ -107,8 +107,8 @@ func TestUpdatePhysicsBodiesGravity(t *testing.T) {
 		V: mgl32.Vec2{0, 0},
 		M: 1,
 		R: 1,
-		C: "#000000",
-		T: "default",
+		C: "#FFFFFF",
+		T: 0,
 	}
 	bodies[1] = BodyData{
 		I: "0000000000000001",
@@ -116,8 +116,8 @@ func TestUpdatePhysicsBodiesGravity(t *testing.T) {
 		V: mgl32.Vec2{0, 0},
 		M: 1,
 		R: 1,
-		C: "#000000",
-		T: "default",
+		C: "#FFFFFF",
+		T: 0,
 	}
 
 	simState := &SimulationState{
@@ -144,6 +144,35 @@ func TestUpdatePhysicsBodiesGravity(t *testing.T) {
 
 	if simState.Bodies[1].P.Y() != 0 {
 		t.Errorf("Body[1] Y is %f, expected %f", simState.Bodies[0].P.Y(), 0.0)
+	}
+}
+
+func TestSimulationBounds(t *testing.T) {
+	deltaTime := float32(1.0)
+	idPool := idpool.NewIDPool(1, 1)
+	bodies := make([]BodyData, 1, 1)
+	bodies[0] = BodyData{
+		I: idpool.NewID(0),
+		P: mgl32.Vec2{0, 0},
+		V: mgl32.Vec2{10, 0},
+		M: 1,
+		R: 1,
+		C: "#FFFFFF",
+		T: 0,
+	}
+
+	simState := &SimulationState{
+		GravityConstant: 1,
+		MaxVelocity:     10,
+		Bounds:          2,
+		Bodies:          bodies,
+		IdPool:          idPool,
+	}
+
+	UpdateSimulationState(simState, deltaTime)
+
+	if len(simState.Bodies) != 0 {
+		t.Errorf("len(Bodies) is %v, expected %v", len(simState.Bodies), 0)
 	}
 }
 
@@ -181,8 +210,8 @@ func benchmarkUpdateNPhysicsBodies(n int, b *testing.B) {
 			V: mgl32.Vec2{vX, vY},
 			M: 1,
 			R: 1,
-			C: "#000000",
-			T: "default",
+			C: "#FFFFFF",
+			T: 0,
 		}
 
 		pX += 2

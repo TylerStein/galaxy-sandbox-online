@@ -32,10 +32,6 @@ func CreateEmptySimulationState(maxBodies int, g float32, maxVelocity float32, b
 	}
 }
 
-type BodyDataList struct {
-	D []BodyData `json:"d"`
-}
-
 type BodyData struct {
 	I string     `json:"i"`
 	P mgl32.Vec2 `json:"p"`
@@ -43,24 +39,25 @@ type BodyData struct {
 	M float32    `json:"m"`
 	R float32    `json:"r"`
 	C string     `json:"c"`
-	T string     `json:"t"`
+	T int        `json:"t"`
 }
 
 func (data *BodyData) CleanBodyData() {
-	if data.M <= 0 {
-		data.M = 1
+	if data.R <= 0.0 {
+		data.R = 0.25
+	} else if data.R > 4.0 {
+		data.R = 4.0
 	}
 
-	if data.R <= 0 {
-		data.R = 0.25
-	}
+	// m = r * 10
+	data.M = data.R * 10
 
 	if len(data.C) != 7 {
 		data.C = "#FFFFFF"
 	}
 
-	if len(data.T) == 0 {
-		data.T = "default"
+	if data.T < 0 {
+		data.T = 0
 	}
 }
 
@@ -109,12 +106,12 @@ func UpdateSimulationState(simState *SimulationState, deltaTime float32) {
 				continue
 			}
 
-			forces = forces.Add(calculateForces(1.0, simState.Bodies[i].P.X(), simState.Bodies[i].P.Y(), simState.Bodies[i].M, simState.Bodies[j].P.X(), simState.Bodies[j].P.Y(), simState.Bodies[j].M))
-			forces = clampVectorMagnitude(forces, 100)
+			forces = forces.Add(calculateForces2(simState.GravityConstant, simState.Bodies[i].P.X(), simState.Bodies[i].P.Y(), simState.Bodies[i].M, simState.Bodies[j].P.X(), simState.Bodies[j].P.Y(), simState.Bodies[j].M))
+			forces = clampVectorMagnitude(forces, simState.MaxVelocity)
 		}
 
 		// add total forces to velocity
-		simState.Bodies[i].V = simState.Bodies[i].V.Add(forces.Mul(deltaTime))
+		simState.Bodies[i].V = clampVectorMagnitude(simState.Bodies[i].V.Add(forces.Mul(deltaTime)), simState.MaxVelocity)
 	}
 
 	// use an empty struct map as a set
@@ -123,7 +120,7 @@ func UpdateSimulationState(simState *SimulationState, deltaTime float32) {
 		simState.Bodies[i].P = simState.Bodies[i].P.Add(simState.Bodies[i].V.Mul(deltaTime))
 
 		// add out of bounds bodies to the remove set
-		if simState.Bodies[i].P.Len() > 1000 {
+		if simState.Bodies[i].P.Len() > simState.Bounds {
 			toRemoveMap[i] = true
 		}
 	}
@@ -179,9 +176,9 @@ func UpdateSimulationState(simState *SimulationState, deltaTime float32) {
 }
 
 func absorb(self *BodyData, other *BodyData) {
-	self.R += other.R * 0.5
-	self.M += other.M * 0.5
-	self.V = self.V.Add(other.V.Mul(0.5))
+	self.R += other.R * 0.15
+	self.M += self.R * 10
+	// self.V = self.V.Add(other.V.Mul(0.5))
 }
 
 func clampVectorMagnitude(vector mgl32.Vec2, mag float32) mgl32.Vec2 {
@@ -196,6 +193,19 @@ func calculateForces(g float32, x1 float32, y1 float32, m1 float32, x2 float32, 
 	d := sqrt32(pow32(x1-x2, 2.0) + pow32(y1-y2, 2))
 	a := mgl32.Vec2{(x2 - x1) / d, (y2 - y1) / d}
 	return a.Mul(g * m2 / (d * d))
+}
+
+func calculateForces2(g float32, x1 float32, y1 float32, m1 float32, x2 float32, y2 float32, m2 float32) mgl32.Vec2 {
+	r := mgl32.Vec2{x2 - x1, y2 - y1}
+	d := r.Len()
+
+	if d < 0.5 {
+		d = 0.5
+	}
+
+	r.Normalize()
+	s := (g * m1 * m2) / (d * d)
+	return r.Mul(s)
 }
 
 func pow32(a float32, b float32) float32 {

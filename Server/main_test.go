@@ -17,7 +17,7 @@ func TestSimulationAddBody(t *testing.T) {
 		M: 1,
 		R: 1,
 		C: "#FFFFFF",
-		T: "default",
+		T: 0,
 	}
 
 	bodyJson, err := json.Marshal(body)
@@ -45,22 +45,22 @@ func TestSimulationReadUpdate(t *testing.T) {
 		M: 1,
 		R: 1,
 		C: "#FFFFFF",
-		T: "default",
+		T: 0,
 	}
 	sim.AddSimulationBody(state, body)
-
+	hub := newHub(make(chan []byte), make(chan []byte))
 	output := make(chan []byte)
-	go readSimulationStateUpdate(state, output)
+	go buildFrameData(state, hub, output)
 
-	updatedBodies := sim.BodyDataList{}
+	frameData := FrameData{}
 	data := <-output
 
-	err := json.Unmarshal(data, &updatedBodies)
+	err := json.Unmarshal(data, &frameData)
 	if err != nil {
 		t.Fatalf("Error trying to unmarshal BodyJson list: %v", err)
 	}
 
-	if state.Bodies[0].I != updatedBodies.D[0].I {
-		t.Errorf("Updated BodyData list 0 has ID %v, expected %v", updatedBodies.D[0].I, state.Bodies[0].I)
+	if state.Bodies[0].I != frameData.D[0].I {
+		t.Errorf("Updated BodyData list 0 has ID %v, expected %v", frameData.D[0].I, state.Bodies[0].I)
 	}
 }

@@ -1,0 +1,11 @@
+gcloud run deploy galaxy-sandbox-online ^
+--project game-jams ^
+--concurrency 50 ^
+--max-instances 1 ^
+--source F:\dev\game\unity\GalaxySandboxOnline\Server ^
+--region us-central1 ^
+--set-env-vars "MAX_BODIES=512" ^
+--set-env-vars "MAX_CLIENTS=50" ^
+--set-env-vars "MAX_VELOCITY=3" ^
+--set-env-vars "MAX_BOUNDS=100" ^
+--set-env-vars "GRAVITY=2"

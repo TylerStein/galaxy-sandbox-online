@@ -10,19 +10,32 @@ namespace GSO
 
         public float distanceBounds = 100f;
         public float gravitationalConstant = 1f;
-        public float maxDistance = 1000f;
-        public int rounds = 3;
         public List<BodyData> physicsBodies = new List<BodyData>();
         public HashSet<BodyData> toRemove = new HashSet<BodyData>();
 
         private Stack<string> ids = new Stack<string>();
 
-        private void Awake() {
+        public override void Activate() {
+            toRemove.Clear();
+            physicsBodies.Clear();
+            ids.Clear();
             for (int i = 0; i < 256; i++) {
                 string str = i.ToString();
                 int zeroes = 16 - str.Length;
                 ids.Push(str.PadLeft(zeroes, '0'));
             }
+            ConnectionEvent.Invoke();
+        }
+
+        public override void Deactivate() {
+            toRemove.Clear();
+            physicsBodies.Clear();
+            ids.Clear();
+            ConnectionEvent.Invoke();
+        }
+
+        public override void ReActivate() {
+            Activate();
         }
 
         public override void AddBody(BodyData data) {
@@ -30,8 +43,8 @@ namespace GSO
             physicsBodies.Add(data);
         }
 
-        public override bool IsConnected() {
-            return true;
+        public override bool IsReady() {
+            return ids.Count > 0;
         }
 
         public override void ReadBodies(out BodyData[] bodies) {
@@ -55,11 +68,11 @@ namespace GSO
 
                 for (int j = 0; j < physicsBodies.Count; j++) {
                     if (i == j) continue;
-                    forces += CalculateForces(
+                    forces += CalculateForces2(
                         gravitationalConstant,
                         physicsBodies[i].pvec,
                         physicsBodies[i].m,
-                        physicsBodies[i].pvec,
+                        physicsBodies[j].pvec,
                         physicsBodies[j].m
                     );
 
@@ -67,7 +80,7 @@ namespace GSO
                 }
 
                 // Add total forces
-                physicsBodies[i].vvec = physicsBodies[i].vvec + (forces / physicsBodies[i].m) * deltaTime;
+                physicsBodies[i].vvec = Vector2.ClampMagnitude(physicsBodies[i].vvec + (forces / physicsBodies[i].m) * deltaTime, manager.settings.maxVelocity);
             }
 
             toRemove.Clear();
@@ -92,16 +105,12 @@ namespace GSO
                     if (i == j) continue;
                     if (toRemove.Contains(physicsBodies[j])) continue;
 
-                    Vector2 diff = physicsBodies[i].pvec - physicsBodies[j].pvec;
-                    if (physicsBodies[i].r > physicsBodies[j].r) {
-                        if (diff.magnitude < physicsBodies[i].r) {
-                            // i bigger
+                    float diff = Vector2.Distance(physicsBodies[i].pvec, physicsBodies[j].pvec);
+                    if (diff < (physicsBodies[i].r + physicsBodies[j].r)) {
+                        if (physicsBodies[i].r > physicsBodies[j].r) {
                             toRemove.Add(physicsBodies[j]);
                             Absorb(physicsBodies[i], physicsBodies[j]);
-                        }
-                    } else {
-                        if (diff.magnitude < physicsBodies[j].r) {
-                            // j bigger
+                        } else {
                             toRemove.Add(physicsBodies[i]);
                             Absorb(physicsBodies[j], physicsBodies[i]);
                         }
@@ -115,9 +124,9 @@ namespace GSO
         }
 
         public void Absorb(BodyData self, BodyData other) {
-            self.r += other.r * 0.5f;
-            self.m += other.m * 0.5f;
-            self.vvec = self.vvec + (other.vvec * 0.5f);
+            self.r += other.r * 0.15f;
+            self.m = self.r * 10;
+            // self.vvec = self.vvec + (other.vvec * 0.5f);
         }
 
         public Vector2 CalculateForces(float g, Vector2 p1, float m1, Vector2 p2, float m2) {
@@ -127,9 +136,32 @@ namespace GSO
             return accel;
         }
 
+        public Vector2 CalculateForces2(float g, Vector2 p1, float m1, Vector2 p2, float m2) {
+            Vector2 r = p2 - p1;
+            float d = Mathf.Max(r.magnitude, 0.5f);
+            r.Normalize();
+            float s = (g * m1 * m2) / (d * d);
+            return r * s;
+        }
+
         public void RemoveBody(BodyData body) {
             ids.Push(body.i);
             physicsBodies.Remove(body);
+        }
+
+        public override int GetPlayerCount() {
+            return 1;
+        }
+
+        public override int GetObjectCount() {
+            return physicsBodies.Count;
+        }
+
+        public void OnDrawGizmos() {
+            Gizmos.color = Color.green;
+            foreach (BodyData body in physicsBodies) {
+                Gizmos.DrawWireSphere(body.pvec, body.r);
+            }
         }
     }
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"log"
 	"net/http"
@@ -12,8 +13,16 @@ import (
 	"github.com/TylerStein/galaxy-sandbox-online/internal/sim"
 )
 
-const MaxBodies = int(512)
-const MaxClients = int(256)
+const DefaultMaxBodies = int64(512)
+const DefaultMaxClients = int64(50)
+const DefaultMaxVelocity = float64(10)
+const DefaultMaxBounds = float64(100)
+const DefaultGravity = float64(2)
+
+type FrameData struct {
+	D []sim.BodyData `json:"d"`
+	P int            `json:"p"`
+}
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
 	body := []byte("OK")
@@ -25,13 +34,13 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func handleSimulationIO(simState *sim.SimulationState, updated chan uint64, input chan []byte, output chan []byte) {
+func handleFrameIO(simState *sim.SimulationState, hub *Hub, updated chan uint64, input chan []byte, output chan []byte) {
 	lastTick := uint64(0)
 	for {
 		select {
 		case tick := <-updated:
 			if tick != lastTick {
-				readSimulationStateUpdate(simState, output)
+				buildFrameData(simState, hub, output)
 			}
 		case message := <-input:
 			handleSimulationStateInput(simState, message)
@@ -39,11 +48,11 @@ func handleSimulationIO(simState *sim.SimulationState, updated chan uint64, inpu
 	}
 }
 
-func readSimulationStateUpdate(simState *sim.SimulationState, output chan []byte) {
+func buildFrameData(simState *sim.SimulationState, hub *Hub, output chan []byte) {
 	defer simState.Mu.Unlock()
 	simState.Mu.Lock()
 
-	bodyList := sim.BodyDataList{D: simState.Bodies}
+	bodyList := FrameData{D: simState.Bodies, P: len(hub.clients)}
 	body, err := json.Marshal(bodyList)
 	if err != nil {
 		fmt.Println(err)
@@ -69,12 +78,37 @@ func handleSimulationStateInput(simState *sim.SimulationState, message []byte) {
 }
 
 func main() {
+	port := os.Getenv("PORT")
+	maxBodies, err := strconv.ParseInt(os.Getenv("MAX_BODIES"), 10, 32)
+	if err != nil {
+		maxBodies = DefaultMaxBodies
+	}
+
+	maxClients, err := strconv.ParseInt(os.Getenv("MAX_CLIENTS"), 10, 32)
+	if err != nil {
+		maxClients = DefaultMaxClients
+	}
+
+	maxVelocity, err := strconv.ParseFloat(os.Getenv("MAX_VELOCITY"), 32)
+	if err != nil {
+		maxVelocity = DefaultMaxVelocity
+	}
+
+	maxBounds, err := strconv.ParseFloat(os.Getenv("MAX_BOUNDS"), 32)
+	if err != nil {
+		maxBounds = DefaultMaxBounds
+	}
+
+	gravity, err := strconv.ParseFloat(os.Getenv("GRAVITY"), 32)
+	if err != nil {
+		gravity = DefaultGravity
+	}
+
 	var quit = make(chan bool)
-	var simState = sim.CreateEmptySimulationState(MaxBodies, 1, 100, 1000)
+	var simState = sim.CreateEmptySimulationState(int(maxBodies), float32(gravity), float32(maxVelocity), float32(maxBounds))
 
 	fmt.Println("Starting server")
 
-	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
@@ -85,10 +119,14 @@ func main() {
 	go hub.run()
 
 	updated := make(chan uint64)
-	go handleSimulationIO(simState, updated, incoming, outgoing)
+	go handleFrameIO(simState, hub, updated, incoming, outgoing)
 	go sim.StartSimulation(simState, 16*time.Millisecond, quit, updated)
 
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		if len(hub.clients) > int(maxClients) {
+			w.WriteHeader(404)
+		}
+
 		serveWs(hub, w, r)
 	})
 
