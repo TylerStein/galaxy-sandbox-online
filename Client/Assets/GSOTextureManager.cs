@@ -12,19 +12,19 @@ namespace GSO
             if (planetSprites.Count == 0) throw new UnityException("PlanetSprites cannot be empty!");
         }
 
-        public int IncrementSpriteIndex(int index) {
+        public byte IncrementSpriteIndex(byte index) {
             if (index >= GetSpritesCount() - 1) {
                 return 0;
             } else {
-                return index + 1;
+                return (byte)(index + 1);
             }
         }
 
-        public int DecrementSpriteIndex(int index) {
+        public byte DecrementSpriteIndex(byte index) {
             if (index <= 0) {
-                return GetSpritesCount() - 1;
+                return (byte)(GetSpritesCount() - 1);
             } else {
-                return index - 1;
+                return (byte)(index - 1);
             }
         }
 
@@ -32,8 +32,8 @@ namespace GSO
             return planetSprites.Count;
         }
 
-        public int GetRandomSpriteIndex() {
-            return Random.Range(0, planetSprites.Count);
+        public byte GetRandomSpriteIndex() {
+            return (byte)Random.Range(0, planetSprites.Count);
         }
 
         public Sprite GetSpriteAtIndex(int index) {

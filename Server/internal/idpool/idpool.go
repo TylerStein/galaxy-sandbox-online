@@ -1,18 +1,16 @@
 package idpool
 
-import "fmt"
-
 type IDPool struct {
 	step int
 	size int
-	pool []string
+	pool []uint16
 }
 
 func (pool *IDPool) IsEmpty() bool {
 	return len(pool.pool) == 0
 }
 
-func (pool *IDPool) DequeueId() string {
+func (pool *IDPool) DequeueId() uint16 {
 	if pool.IsEmpty() {
 		pool.AddStep()
 	}
@@ -23,12 +21,12 @@ func (pool *IDPool) DequeueId() string {
 	return element
 }
 
-func (pool *IDPool) EnqueueId(value string) {
+func (pool *IDPool) EnqueueId(value uint16) {
 	pool.pool = append(pool.pool, value)
 }
 
 func (pool *IDPool) AddStep() {
-	newArr := make([]string, pool.step)
+	newArr := make([]uint16, pool.step)
 	for i := 0; i < pool.step; i++ {
 		newArr[i] = NewID(pool.size + i)
 	}
@@ -37,12 +35,12 @@ func (pool *IDPool) AddStep() {
 	pool.pool = append(pool.pool, newArr...)
 }
 
-func NewID(index int) string {
-	return fmt.Sprintf("%016d", index)
+func NewID(index int) uint16 {
+	return uint16(index)
 }
 
 func NewIDPool(size int, step int) IDPool {
-	pool := make([]string, size)
+	pool := make([]uint16, size)
 	for i := 0; i < size; i++ {
 		pool[i] = NewID(i)
 	}

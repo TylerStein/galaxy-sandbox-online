@@ -1,7 +1,6 @@
 package sim
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -57,18 +56,18 @@ func TestUpdatePhysicsBodiesVelocity(t *testing.T) {
 	idPool := idpool.NewIDPool(1, 1)
 	bodies := make([]BodyData, 1)
 	bodies[0] = BodyData{
-		I: "0000000000000000",
+		I: idpool.NewID(0),
 		P: mgl32.Vec2{0, 0},
 		V: mgl32.Vec2{0, 0},
 		M: 1,
 		R: 1,
-		C: "#FFFFFF",
+		// C: "#FFFFFF",
 		T: 0,
 	}
 
 	simState := &SimulationState{
 		GravityConstant: 1,
-		MaxVelocity:     1,
+		MaxVelocity:     5,
 		Bounds:          10,
 		Bodies:          bodies,
 		IdPool:          idPool,
@@ -102,21 +101,21 @@ func TestUpdatePhysicsBodiesGravity(t *testing.T) {
 	idPool := idpool.NewIDPool(1, 1)
 	bodies := make([]BodyData, 2)
 	bodies[0] = BodyData{
-		I: "0000000000000000",
+		I: idpool.NewID(0),
 		P: mgl32.Vec2{0, 0},
 		V: mgl32.Vec2{0, 0},
 		M: 1,
 		R: 1,
-		C: "#FFFFFF",
+		// C: "#FFFFFF",
 		T: 0,
 	}
 	bodies[1] = BodyData{
-		I: "0000000000000001",
+		I: idpool.NewID(1),
 		P: mgl32.Vec2{2, 0},
 		V: mgl32.Vec2{0, 0},
 		M: 1,
 		R: 1,
-		C: "#FFFFFF",
+		// C: "#FFFFFF",
 		T: 0,
 	}
 
@@ -157,7 +156,7 @@ func TestSimulationBounds(t *testing.T) {
 		V: mgl32.Vec2{10, 0},
 		M: 1,
 		R: 1,
-		C: "#FFFFFF",
+		// C: "#FFFFFF",
 		T: 0,
 	}
 
@@ -192,6 +191,92 @@ func TestStartSimulation(t *testing.T) {
 	}
 }
 
+func TestPackBodyData(t *testing.T) {
+	pv := mgl32.Vec2{123.456, -123.456}
+	vv := mgl32.Vec2{987.654, -987.654}
+
+	body := BodyData{
+		I: idpool.NewID(6555),
+		P: pv,
+		V: vv,
+		M: 12.34,
+		R: 56.78,
+		T: 34,
+	}
+
+	bytes, err := body.Pack()
+	if err != nil {
+		t.Fatalf("Error packing body data %v\n", err)
+	}
+
+	body2 := BodyData{}
+	err = UnpackBodyData(bytes, &body2)
+	if err != nil {
+		t.Fatalf("Error unpacking body data %v\n", err)
+	}
+
+	if body.I != body2.I {
+		t.Fatalf("Unpacked Body I is %v, expected %v", body2.I, body.I)
+	}
+
+	if body.P != body2.P {
+		t.Fatalf("Unpacked Body P is %v, expected %v", body2.P, body.P)
+	}
+
+	if body.V != body.V {
+		t.Fatalf("Unpacked Body V is %v, expected %v", body2.V, body.V)
+	}
+
+	if body.M != body2.M {
+		t.Fatalf("Unpacked Body M is %v, expected %v", body2.M, body.M)
+	}
+
+	if body.R != body2.R {
+		t.Fatalf("Unpacked Body R is %v, expected %v", body2.R, body.R)
+	}
+
+	if body.T != body2.T {
+		t.Fatalf("Unpacked Body T is %v, expected %v", body2.T, body.T)
+	}
+}
+
+func TestSimBodyAbsorb(t *testing.T) {
+	deltaTime := float32(1.0)
+	idPool := idpool.NewIDPool(2, 2)
+	bodies := make([]BodyData, 2, 2)
+	bodies[0] = BodyData{
+		I: idpool.NewID(0),
+		P: mgl32.Vec2{0, 0},
+		V: mgl32.Vec2{0, 0},
+		M: 1,
+		R: 2,
+		T: 0,
+	}
+
+	bodies[1] = BodyData{
+		I: idpool.NewID(0),
+		P: mgl32.Vec2{2.99, 0},
+		V: mgl32.Vec2{0, 0},
+		M: 1,
+		R: 2,
+		T: 0,
+	}
+
+	simState := &SimulationState{
+		GravityConstant: 1,
+		MaxVelocity:     10,
+		Bounds:          10,
+		Bodies:          bodies,
+		IdPool:          idPool,
+	}
+
+	UpdateSimulationState(simState, deltaTime)
+
+	if len(simState.Bodies) != 1 {
+		t.Errorf("len(Bodies) is %v, expected %v", len(simState.Bodies), 1)
+	}
+}
+
 func benchmarkUpdateNPhysicsBodies(n int, b *testing.B) {
 	b.StopTimer()
 	deltaTime := float32((16 * time.Millisecond).Seconds())
@@ -205,12 +290,12 @@ func benchmarkUpdateNPhysicsBodies(n int, b *testing.B) {
 
 	for i := 0; i < n; i++ {
 		bodies[i] = BodyData{
-			I: fmt.Sprintf("%d", i),
+			I: idpool.NewID(i),
 			P: mgl32.Vec2{pX, pY},
 			V: mgl32.Vec2{vX, vY},
 			M: 1,
 			R: 1,
-			C: "#FFFFFF",
+			// C: "#FFFFFF",
 			T: 0,
 		}
 

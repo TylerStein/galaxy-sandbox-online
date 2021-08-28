@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using System;
 using System.Text;
+using System.IO;
 
 using HybridWebSocket;
 // using Utf8Json;
@@ -109,10 +110,11 @@ namespace GSO
 
         public override void AddBody(BodyData data) {
             if (!IsReady()) return;
-
-            string serializedString = JsonUtility.ToJson(data);
-            byte[] serialized = UTF8Encoding.UTF8.GetBytes(serializedString);
-            websocket.Send(serialized);
+            byte[] outData = BodyPacket.EncodeBody(data);
+            websocket.Send(outData);
+            //string serializedString = JsonUtility.ToJson(data);
+            //byte[] serialized = UTF8Encoding.UTF8.GetBytes(serializedString);
+            //websocket.Send(serialized);
         }
 
         public override bool IsReady() {
@@ -156,10 +158,11 @@ namespace GSO
         private void onEvent_wsMessage(byte[] msg) {
             try {
                 // BodyData[] data = JsonSerializer.Deserialize<BodyData[]>(args.Data);
-                string msgString = Encoding.UTF8.GetString(msg);
-                FrameData data = JsonUtility.FromJson<FrameData>(msgString);
-                lastBodyData = data.d;
-                playerCount = data.p;
+                //string msgString = Encoding.UTF8.GetString(msg);
+                //FrameData data = JsonUtility.FromJson<FrameData>(msgString);
+                FrameData frameData = BodyPacket.DecodeFrame(msg);
+                lastBodyData = frameData.d;
+                playerCount = frameData.p;
                 bodyCount = lastBodyData.Length;
             } catch (Exception e) {
                 Debug.LogError(e);
@@ -191,6 +194,78 @@ namespace GSO
             foreach (BodyData body in lastBodyData) {
                 Gizmos.DrawWireSphere(body.pvec, body.r);
             }
+        }
+    }
+
+    public class FramePacket
+    {
+        public ushort P;
+        public BodyPacket[] D;
+    }
+
+    public class BodyPacket
+    {
+        public static int BodyPacketBits = 16 + 32 + 32 + 32 + 32 + 32 + 32 + 8;
+        public static int BodyPacketBytes = BodyPacketBits / 8;
+
+        public ushort I;   // 16
+        public float PX;   // 32
+        public float PY;   // 32
+        public float VX;   // 32
+        public float VY;   // 32
+        public float M;    // 32
+        public float R;    // 32
+        public byte T;     // 8
+
+        public static FrameData DecodeFrame(byte[] data) {
+            BodyPacket packet = new BodyPacket();
+            ushort playerCount = 0;
+            // - 4 maybe?
+            int bodyCount = (data.Length - 2) / (BodyPacketBytes);
+            BodyData[] bodies = new BodyData[bodyCount];
+            
+
+            using (MemoryStream stream = new MemoryStream(data)) {
+                using (BinaryReader reader = new BinaryReader(stream, Encoding.ASCII)) {
+                    playerCount = reader.ReadUInt16();
+
+                    for (int i = 0; i < bodyCount; i++) {
+                        bodies[i] = new BodyData() {
+                            i = reader.ReadUInt16(),
+                            p = new float[2] { reader.ReadSingle(), reader.ReadSingle() },
+                            v = new float[2] { reader.ReadSingle(), reader.ReadSingle() },
+                            m = reader.ReadSingle(),
+                            r = reader.ReadSingle(),
+                            t = reader.ReadByte(),
+                        };
+                    }
+                }
+            }
+
+            return new FrameData() {
+                p = playerCount,
+                d = bodies,
+            };
+        }
+
+        public static byte[] EncodeBody(BodyData body) {
+            byte[] data = new byte[BodyPacketBytes];
+            using (MemoryStream stream = new MemoryStream(data, 0, BodyPacketBytes, true, true)) {
+                using (BinaryWriter writer = new BinaryWriter(stream)) {
+                    writer.Write(body.i);
+                    writer.Write(body.p[0]);
+                    writer.Write(body.p[1]);
+                    writer.Write(body.v[0]);
+                    writer.Write(body.v[1]);
+                    writer.Write(body.m);
+                    writer.Write(body.r);
+                    writer.Write(body.t);
+
+                    // int len = stream.Read(data, 0, BodyPacketBytes);
+                }
+            }
+
+            return data;
         }
     }
 }

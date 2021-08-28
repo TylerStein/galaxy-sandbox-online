@@ -24,10 +24,10 @@ namespace GSO
     {
         public GSOManager manager;
         public Transform simulationSpace;
-        public Dictionary<string, RenderBodyWrapper> wrappers = new Dictionary<string, RenderBodyWrapper>();
-        private Dictionary<string, BodyData> wrappersBuffer = new Dictionary<string, BodyData>();
-        private Dictionary<string, int> wrappersCounter = new Dictionary<string, int>();
-        private List<string> removeBuffer = new List<string>();
+        public Dictionary<ushort, RenderBodyWrapper> wrappers = new Dictionary<ushort, RenderBodyWrapper>();
+        private Dictionary<ushort, BodyData> wrappersBuffer = new Dictionary<ushort, BodyData>();
+        private Dictionary<ushort, int> wrappersCounter = new Dictionary<ushort, int>();
+        private List<ushort> removeBuffer = new List<ushort>();
 
         public override void SetBodies(BodyData[] data) {
             wrappersCounter.Clear();
@@ -51,11 +51,11 @@ namespace GSO
                 }
             }
 
-            foreach (string key in removeBuffer) {
+            foreach (ushort key in removeBuffer) {
                 wrappers.Remove(key);
             }
 
-            foreach (KeyValuePair<string, int> kvp in wrappersCounter) {
+            foreach (KeyValuePair<ushort, int> kvp in wrappersCounter) {
                 // if object exists, count will be 0
                 // if object is new, count will be 1
                 if (kvp.Value == 0) {

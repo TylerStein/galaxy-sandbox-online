@@ -13,16 +13,14 @@ namespace GSO
         public List<BodyData> physicsBodies = new List<BodyData>();
         public HashSet<BodyData> toRemove = new HashSet<BodyData>();
 
-        private Stack<string> ids = new Stack<string>();
+        private Stack<ushort> ids = new Stack<ushort>();
 
         public override void Activate() {
             toRemove.Clear();
             physicsBodies.Clear();
             ids.Clear();
             for (int i = 0; i < 256; i++) {
-                string str = i.ToString();
-                int zeroes = 16 - str.Length;
-                ids.Push(str.PadLeft(zeroes, '0'));
+                ids.Push((ushort)i);
             }
             ConnectionEvent.Invoke();
         }

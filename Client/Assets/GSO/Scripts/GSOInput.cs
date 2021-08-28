@@ -60,7 +60,7 @@ namespace GSO
             } else if (Input.GetButtonUp("Spawn") && placing) {
                 Vector2 vel = Vector2.ClampMagnitude((Vector2)cameraInput.lastWorldMouse - placeStart, manager.settings.maxVelocity);
                 BodyData data = new BodyData() {
-                    i = "",
+                    i = 0,
                     p = new float[] { placeStart.x, placeStart.y },
                     v = new float[] { vel.x, vel.y },
                     r = ghost.radius,
@@ -142,7 +142,7 @@ namespace GSO
         public Transform transform;
         public SpriteRenderer spriteRenderer;
         public float radius = 1f;
-        public int spriteIndex = 0;
+        public byte spriteIndex = 0;
 
         public GSOGhost(GameObject obj) {
             gameObject = obj;

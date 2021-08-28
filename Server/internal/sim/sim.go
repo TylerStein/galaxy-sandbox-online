@@ -1,6 +1,8 @@
 package sim
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"math"
 	"sync"
@@ -32,14 +34,69 @@ func CreateEmptySimulationState(maxBodies int, g float32, maxVelocity float32, b
 	}
 }
 
+const BodyPacketBits = 16 + 32 + 32 + 32 + 32 + 32 + 32 + 8
+const BodyPacketBytes = BodyPacketBits / 8
+
+type BodyPacket struct {
+	I  uint16
+	PX float32
+	PY float32
+	VX float32
+	VY float32
+	M  float32
+	R  float32
+	T  uint8
+}
+
 type BodyData struct {
-	I string     `json:"i"`
+	I uint16     `json:"i"`
 	P mgl32.Vec2 `json:"p"`
 	V mgl32.Vec2 `json:"v"`
 	M float32    `json:"m"`
 	R float32    `json:"r"`
-	C string     `json:"c"`
-	T int        `json:"t"`
+	T uint8      `json:"t"`
+}
+
+func (data *BodyData) Pack() ([]byte, error) {
+	buffer := new(bytes.Buffer)
+	packet := BodyPacket{
+		I:  data.I,
+		PX: data.P.X(),
+		PY: data.P.Y(),
+		VX: data.V.X(),
+		VY: data.V.Y(),
+		M:  data.M,
+		R:  data.R,
+		T:  data.T,
+	}
+
+	err := binary.Write(buffer, binary.LittleEndian, packet)
+	if err != nil {
+		fmt.Printf("Error packing BodyData %v\n", err)
+		return nil, err
+	}
+
+	return buffer.Bytes(), nil
+}
+
+func UnpackBodyData(packet []byte, data *BodyData) error {
+	reader := bytes.NewReader(packet)
+
+	var dataOut BodyPacket
+	err := binary.Read(reader, binary.LittleEndian, &dataOut)
+	if err != nil {
+		fmt.Printf("Error binary reading packet %v\n", err)
+		return err
+	}
+
+	data.I = dataOut.I
+	data.P = mgl32.Vec2{dataOut.PX, dataOut.PY}
+	data.V = mgl32.Vec2{dataOut.VX, dataOut.VY}
+	data.M = dataOut.M
+	data.R = dataOut.R
+	data.T = dataOut.T
+
+	return nil
 }
 
 func (data *BodyData) CleanBodyData() {
@@ -52,9 +109,9 @@ func (data *BodyData) CleanBodyData() {
 	// m = r * 10
 	data.M = data.R * 10
 
-	if len(data.C) != 7 {
-		data.C = "#FFFFFF"
-	}
+	// if len(data.C) != 7 {
+	// 	data.C = "#FFFFFF"
+	// }
 
 	if data.T < 0 {
 		data.T = 0
@@ -141,16 +198,12 @@ func UpdateSimulationState(simState *SimulationState, deltaTime float32) {
 				continue
 			}
 
-			diff := simState.Bodies[i].P.Sub(simState.Bodies[j].P)
-			if simState.Bodies[i].R > simState.Bodies[j].R {
-				if diff.Len() < simState.Bodies[i].R {
-					// body[i] is bigger
+			diff := simState.Bodies[i].P.Sub(simState.Bodies[j].P).Len()
+			if diff < (simState.Bodies[i].R + simState.Bodies[j].R) {
+				if simState.Bodies[i].R > simState.Bodies[j].R {
 					toRemoveMap[j] = true
 					absorb(&simState.Bodies[i], &simState.Bodies[j])
-				}
-			} else {
-				if diff.Len() < simState.Bodies[j].R {
-					// body[j] is bigger
+				} else {
 					toRemoveMap[i] = true
 					absorb(&simState.Bodies[j], &simState.Bodies[i])
 				}

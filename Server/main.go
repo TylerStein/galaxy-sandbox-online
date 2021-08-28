@@ -1,7 +1,8 @@
 package main
 
 import (
-	"encoding/json"
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"strconv"
 
@@ -20,8 +21,8 @@ const DefaultMaxBounds = float64(100)
 const DefaultGravity = float64(2)
 
 type FrameData struct {
-	D []sim.BodyData `json:"d"`
 	P int            `json:"p"`
+	D []sim.BodyData `json:"d"`
 }
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
@@ -52,15 +53,40 @@ func buildFrameData(simState *sim.SimulationState, hub *Hub, output chan []byte)
 	defer simState.Mu.Unlock()
 	simState.Mu.Lock()
 
-	bodyList := FrameData{D: simState.Bodies, P: len(hub.clients)}
-	body, err := json.Marshal(bodyList)
+	buffer := new(bytes.Buffer)
+	clients := uint16(len(hub.clients))
+	err := binary.Write(buffer, binary.LittleEndian, clients)
 	if err != nil {
 		fmt.Println(err)
 		output <- make([]byte, 0)
 		return
 	}
 
-	output <- body
+	for _, body := range simState.Bodies {
+		bodyBytes, err := body.Pack()
+		if err != nil {
+			fmt.Println(err)
+			output <- make([]byte, 0)
+			return
+		}
+
+		err = binary.Write(buffer, binary.LittleEndian, bodyBytes)
+		if err != nil {
+			fmt.Println(err)
+			output <- make([]byte, 0)
+			return
+		}
+	}
+
+	// bodyList := FrameData{D: simState.Bodies, P: len(hub.clients)}
+	// body, err := json.Marshal(bodyList)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	output <- make([]byte, 0)
+	// 	return
+	// }
+
+	output <- buffer.Bytes()
 }
 
 func handleSimulationStateInput(simState *sim.SimulationState, message []byte) {
@@ -68,11 +94,17 @@ func handleSimulationStateInput(simState *sim.SimulationState, message []byte) {
 	simState.Mu.Lock()
 
 	data := sim.BodyData{}
-	err := json.Unmarshal(message, &data)
+	err := sim.UnpackBodyData(message, &data)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
+
+	// err := json.Unmarshal(message, &data)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return
+	// }
 
 	sim.AddSimulationBody(simState, data)
 }

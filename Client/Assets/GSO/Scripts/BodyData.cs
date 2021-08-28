@@ -5,7 +5,7 @@ using System.Text;
 public class FrameData
 {
     [SerializeField] public BodyData[] d;
-    [SerializeField] public int p;
+    [SerializeField] public ushort p;
 }
 
 [System.Serializable]
@@ -14,9 +14,9 @@ public class BodyData
     public static string delimeter = ",";
 
     /// <summary>
-    /// 16 Char ID
+    /// Uint16 id
     /// </summary>
-    [SerializeField] public string i;
+    [SerializeField] public ushort i;
 
     /// <summary>
     /// Position
@@ -62,7 +62,7 @@ public class BodyData
     /// <summary>
     /// Texture (Index)
     /// </summary>
-    [SerializeField] public int t;
+    [SerializeField] public byte t;
 
     //public void Append(StringBuilder sb) {
     //    sb.Append(i)
