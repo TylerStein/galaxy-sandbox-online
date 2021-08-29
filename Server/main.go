@@ -4,11 +4,9 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"strconv"
 
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/TylerStein/galaxy-sandbox-online/internal/sim"
@@ -16,9 +14,11 @@ import (
 
 const DefaultMaxBodies = int64(512)
 const DefaultMaxClients = int64(50)
-const DefaultMaxVelocity = float64(3.5)
+const DefaultMaxVelocity = float64(50)
 const DefaultMaxBounds = float64(100)
-const DefaultGravity = float64(2)
+const DefaultGravity = float64(5)
+const DefaultTimescale = float64(3.75)
+const DefaultMassScale = float64(4)
 
 type FrameData struct {
 	P int            `json:"p"`
@@ -110,40 +110,19 @@ func handleSimulationStateInput(simState *sim.SimulationState, message []byte) {
 }
 
 func main() {
-	port := os.Getenv("PORT")
-	maxBodies, err := strconv.ParseInt(os.Getenv("MAX_BODIES"), 10, 32)
-	if err != nil {
-		maxBodies = DefaultMaxBodies
-	}
-
-	maxClients, err := strconv.ParseInt(os.Getenv("MAX_CLIENTS"), 10, 32)
-	if err != nil {
-		maxClients = DefaultMaxClients
-	}
-
-	maxVelocity, err := strconv.ParseFloat(os.Getenv("MAX_VELOCITY"), 32)
-	if err != nil {
-		maxVelocity = DefaultMaxVelocity
-	}
-
-	maxBounds, err := strconv.ParseFloat(os.Getenv("MAX_BOUNDS"), 32)
-	if err != nil {
-		maxBounds = DefaultMaxBounds
-	}
-
-	gravity, err := strconv.ParseFloat(os.Getenv("GRAVITY"), 32)
-	if err != nil {
-		gravity = DefaultGravity
-	}
+	port := parseEnvString("PORT", "8080")
+	maxBodies := parseEnvInt("MAX_BODIES", int(DefaultMaxBodies))
+	maxClients := parseEnvInt("MAX_CLIENTS", int(DefaultMaxClients))
+	maxVelocity := parseEnvFloat32("MAX_VELOCITY", float32(DefaultMaxVelocity))
+	maxBounds := parseEnvFloat32("MAX_BOUNDS", float32(DefaultMaxBounds))
+	gravity := parseEnvFloat32("GRAVITY", float32(DefaultGravity))
+	timescale := parseEnvFloat32("TIME_SCALE", float32(DefaultTimescale))
+	massScale := parseEnvFloat32("MASS_SCALE", float32(DefaultMassScale))
 
 	var quit = make(chan bool)
-	var simState = sim.CreateEmptySimulationState(int(maxBodies), float32(gravity), float32(maxVelocity), float32(maxBounds))
+	var simState = sim.CreateEmptySimulationState(int(maxBodies), float32(gravity), float32(timescale), float32(massScale), float32(maxVelocity), float32(maxBounds))
 
 	fmt.Println("Starting server")
-
-	if port == "" {
-		port = "8080"
-	}
 
 	outgoing := make(chan []byte)
 	incoming := make(chan []byte)

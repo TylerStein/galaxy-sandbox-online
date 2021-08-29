@@ -79,7 +79,6 @@ public class BodyData
     //      .Append(delimeter)
     //      .Append(t);
     //}
-
     public string ToJson() {
         return JsonUtility.ToJson(this);
     }

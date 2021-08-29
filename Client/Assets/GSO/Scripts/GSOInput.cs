@@ -18,6 +18,7 @@ namespace GSO
         public float minScale = 0.15f;
         public float maxScale = 2.0f;
         public float zoomTowardsStrength = 1f;
+        public float velocityScale = 0.25f;
 
         public float cameraZ = -10;
 
@@ -58,7 +59,8 @@ namespace GSO
                 ghost.spriteIndex = manager.textureManager.GetRandomSpriteIndex();
                 ghost.spriteRenderer.sprite = manager.textureManager.GetSpriteAtIndex(ghost.spriteIndex);
             } else if (Input.GetButtonUp("Spawn") && placing) {
-                Vector2 vel = Vector2.ClampMagnitude((Vector2)cameraInput.lastWorldMouse - placeStart, manager.settings.maxVelocity);
+                Vector2 preScaleVel = (Vector2)cameraInput.lastWorldMouse - placeStart;
+                Vector2 vel = Vector2.ClampMagnitude(preScaleVel * velocityScale, manager.settings.maxVelocity);
                 BodyData data = new BodyData() {
                     i = 0,
                     p = new float[] { placeStart.x, placeStart.y },
@@ -66,7 +68,7 @@ namespace GSO
                     r = ghost.radius,
                     c = "#FFFFFF",
                     t = ghost.spriteIndex,
-                    m = ghost.radius * 10f,
+                    m = ghost.radius * manager.settings.massSizeMultiplier,
                 };
 
                 manager.SpawnBody(data);

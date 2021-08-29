@@ -7,9 +7,6 @@ namespace GSO
     public class LocalSimulationBehaviour : SimulationBehaviour
     {
         public GSOManager manager;
-
-        public float distanceBounds = 100f;
-        public float gravitationalConstant = 1f;
         public List<BodyData> physicsBodies = new List<BodyData>();
         public HashSet<BodyData> toRemove = new HashSet<BodyData>();
 
@@ -38,6 +35,7 @@ namespace GSO
 
         public override void AddBody(BodyData data) {
             data.i = ids.Pop();
+            data.m = CalculateMass(data.r, manager.settings.massSizeMultiplier);
             physicsBodies.Add(data);
         }
 
@@ -56,7 +54,7 @@ namespace GSO
         }
 
         private void Update() {
-            UpdatePhysicsBodies(Time.deltaTime);
+            UpdatePhysicsBodies(Time.deltaTime * manager.settings.timeScaleMultiplier);
         }
 
         public void UpdatePhysicsBodies(float deltaTime) {
@@ -67,18 +65,22 @@ namespace GSO
                 for (int j = 0; j < physicsBodies.Count; j++) {
                     if (i == j) continue;
                     forces += CalculateForces2(
-                        gravitationalConstant,
+                        manager.settings.gravityConstant,
                         physicsBodies[i].pvec,
                         physicsBodies[i].m,
                         physicsBodies[j].pvec,
                         physicsBodies[j].m
                     );
-
-                    forces = Vector2.ClampMagnitude(forces, manager.settings.maxVelocity);
                 }
 
+
+                forces = Vector2.ClampMagnitude(forces, manager.settings.maxVelocity);
+
                 // Add total forces
-                physicsBodies[i].vvec = Vector2.ClampMagnitude(physicsBodies[i].vvec + (forces / physicsBodies[i].m) * deltaTime, manager.settings.maxVelocity);
+                //float m2 = 1f / Mathf.Pow(physicsBodies[i].m, 2f);
+                //float m2 = Mathf.Pow(physicsBodies[i].m, 2f);
+                float m2 = 1f / Mathf.Pow(1 + physicsBodies[i].m, 2f);
+                physicsBodies[i].vvec = Vector2.ClampMagnitude(physicsBodies[i].vvec + (forces * m2) * deltaTime, manager.settings.maxVelocity);
             }
 
             toRemove.Clear();
@@ -88,7 +90,7 @@ namespace GSO
                 physicsBodies[i].pvec = physicsBodies[i].pvec + physicsBodies[i].vvec * deltaTime;
 
                 float delta = Vector2.Distance(Vector2.zero, physicsBodies[i].pvec);
-                if (delta > distanceBounds) {
+                if (delta > manager.settings.bounds) {
                     toRemove.Add(physicsBodies[i]);
                     //physicsBodies[i].p = Vector2.zero;
                     //physicsBodies[i].v = Vector2.zero;
@@ -121,9 +123,13 @@ namespace GSO
             }
         }
 
+        public static float CalculateMass(float radius, float massSizeMultiplier) {
+            return Mathf.Pow(1f + radius, massSizeMultiplier);
+        }
+
         public void Absorb(BodyData self, BodyData other) {
-            self.r += other.r * 0.15f;
-            self.m = self.r * 10;
+            self.r += other.r * manager.settings.absorbRate;
+            self.m = CalculateMass(self.r, manager.settings.massSizeMultiplier);
             // self.vvec = self.vvec + (other.vvec * 0.5f);
         }
 

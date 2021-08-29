@@ -298,8 +298,6 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   manager: {fileID: 66153016}
-  distanceBounds: 100
-  gravitationalConstant: 2
   physicsBodies: []
 --- !u!114 &66153018
 MonoBehaviour:
@@ -1274,13 +1272,14 @@ MonoBehaviour:
   moveSpeed: 6
   zoomSpeed: 12
   minOrthoSize: 5
-  maxOrthoSize: 60
+  maxOrthoSize: 100
   maxDistance: 100
   scaleSpeed: 3
   scaleStep: 0.1
   minScale: 0.15
   maxScale: 2
   zoomTowardsStrength: 1
+  velocityScale: 0.25
   cameraZ: -10
   camera: {fileID: 970953300}
   manager: {fileID: 66153016}
@@ -1680,7 +1679,7 @@ Transform:
   m_GameObject: {fileID: 2122069933}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.06, y: 0.06, z: 1}
+  m_LocalScale: {x: 0.0015, y: 0.0015, z: 1}
   m_Children: []
   m_Father: {fileID: 1291218447}
   m_RootOrder: 0
@@ -1725,12 +1724,12 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: 5a13d6e97497bdf41a0fcee6377c2546, type: 3}
+  m_Sprite: {fileID: 21300000, guid: c01aaa4bb0436aa479357dea0bb0af56, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
-  m_DrawMode: 0
-  m_Size: {x: 1, y: 1}
+  m_DrawMode: 2
+  m_Size: {x: 800, y: 800}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1

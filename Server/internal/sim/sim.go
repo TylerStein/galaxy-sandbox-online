@@ -17,6 +17,8 @@ type SimulationState struct {
 	Mu sync.Mutex
 
 	GravityConstant float32
+	TimeScale       float32
+	MassScale       float32
 	MaxVelocity     float32
 	Bounds          float32
 
@@ -24,9 +26,11 @@ type SimulationState struct {
 	IdPool idpool.IDPool
 }
 
-func CreateEmptySimulationState(maxBodies int, g float32, maxVelocity float32, bounds float32) *SimulationState {
+func CreateEmptySimulationState(maxBodies int, gravityConstant float32, timeScale float32, massScale float32, maxVelocity float32, bounds float32) *SimulationState {
 	return &SimulationState{
-		GravityConstant: g,
+		GravityConstant: gravityConstant,
+		TimeScale:       timeScale,
+		MassScale:       massScale,
 		MaxVelocity:     maxVelocity,
 		Bounds:          bounds,
 		Bodies:          make([]BodyData, 0, maxBodies),
@@ -99,7 +103,11 @@ func UnpackBodyData(packet []byte, data *BodyData) error {
 	return nil
 }
 
-func (data *BodyData) CleanBodyData() {
+func calculateMass(radius float32, massSizeMultiplier float32) float32 {
+	return pow32(1.0+radius, massSizeMultiplier)
+}
+
+func (data *BodyData) CleanBodyData(massScale float32) {
 	if data.R <= 0.0 {
 		data.R = 0.25
 	} else if data.R > 4.0 {
@@ -107,7 +115,7 @@ func (data *BodyData) CleanBodyData() {
 	}
 
 	// m = r * 10
-	data.M = data.R * 10
+	data.M = calculateMass(data.R, massScale)
 
 	// if len(data.C) != 7 {
 	// 	data.C = "#FFFFFF"
@@ -145,7 +153,7 @@ func AddSimulationBody(simState *SimulationState, body BodyData) {
 	}
 
 	body.I = simState.IdPool.DequeueId()
-	body.CleanBodyData()
+	body.CleanBodyData(simState.MassScale)
 	simState.Bodies = append(simState.Bodies, body)
 }
 
@@ -153,6 +161,7 @@ func UpdateSimulationState(simState *SimulationState, deltaTime float32) {
 	defer simState.Mu.Unlock()
 	simState.Mu.Lock()
 
+	deltaTime *= simState.TimeScale
 	blen := len(simState.Bodies)
 
 	for i := 0; i < blen; i++ {
@@ -164,11 +173,11 @@ func UpdateSimulationState(simState *SimulationState, deltaTime float32) {
 			}
 
 			forces = forces.Add(calculateForces2(simState.GravityConstant, simState.Bodies[i].P.X(), simState.Bodies[i].P.Y(), simState.Bodies[i].M, simState.Bodies[j].P.X(), simState.Bodies[j].P.Y(), simState.Bodies[j].M))
-			forces = clampVectorMagnitude(forces, simState.MaxVelocity)
 		}
 
-		// add total forces to velocity
-		simState.Bodies[i].V = clampVectorMagnitude(simState.Bodies[i].V.Add(forces.Mul(deltaTime)), simState.MaxVelocity)
+		forces = clampVectorMagnitude(forces, simState.MaxVelocity)
+		m2 := 1.0 / pow32(1.0+simState.Bodies[i].M, 2.0)
+		simState.Bodies[i].V = clampVectorMagnitude(simState.Bodies[i].V.Add(forces.Mul(m2).Mul(deltaTime)), simState.MaxVelocity)
 	}
 
 	// use an empty struct map as a set
@@ -202,10 +211,10 @@ func UpdateSimulationState(simState *SimulationState, deltaTime float32) {
 			if diff < (simState.Bodies[i].R + simState.Bodies[j].R) {
 				if simState.Bodies[i].R > simState.Bodies[j].R {
 					toRemoveMap[j] = true
-					absorb(&simState.Bodies[i], &simState.Bodies[j])
+					absorb(&simState.Bodies[i], &simState.Bodies[j], simState.MassScale)
 				} else {
 					toRemoveMap[i] = true
-					absorb(&simState.Bodies[j], &simState.Bodies[i])
+					absorb(&simState.Bodies[j], &simState.Bodies[i], simState.MassScale)
 				}
 			}
 		}
@@ -228,9 +237,9 @@ func UpdateSimulationState(simState *SimulationState, deltaTime float32) {
 	}
 }
 
-func absorb(self *BodyData, other *BodyData) {
+func absorb(self *BodyData, other *BodyData, massScale float32) {
 	self.R += other.R * 0.15
-	self.M += self.R * 10
+	self.M += calculateMass(self.R, massScale)
 	// self.V = self.V.Add(other.V.Mul(0.5))
 }
 

@@ -25,7 +25,7 @@ func TestClampMagnitude(t *testing.T) {
 }
 
 func TestEmptySimulationState(t *testing.T) {
-	simState := CreateEmptySimulationState(10, 1, 100, 1000)
+	simState := CreateEmptySimulationState(10, 1, 1, 10, 100, 1000)
 	if simState == nil {
 		t.Fatalf("SimulationState is nil, should be not nil")
 	}
@@ -67,6 +67,7 @@ func TestUpdatePhysicsBodiesVelocity(t *testing.T) {
 
 	simState := &SimulationState{
 		GravityConstant: 1,
+		TimeScale:       1,
 		MaxVelocity:     5,
 		Bounds:          10,
 		Bodies:          bodies,
@@ -102,7 +103,7 @@ func TestUpdatePhysicsBodiesGravity(t *testing.T) {
 	bodies := make([]BodyData, 2)
 	bodies[0] = BodyData{
 		I: idpool.NewID(0),
-		P: mgl32.Vec2{0, 0},
+		P: mgl32.Vec2{-2, 0},
 		V: mgl32.Vec2{0, 0},
 		M: 1,
 		R: 1,
@@ -121,6 +122,7 @@ func TestUpdatePhysicsBodiesGravity(t *testing.T) {
 
 	simState := &SimulationState{
 		GravityConstant: 1,
+		TimeScale:       1,
 		MaxVelocity:     1,
 		Bounds:          10,
 		Bodies:          bodies,
@@ -129,8 +131,8 @@ func TestUpdatePhysicsBodiesGravity(t *testing.T) {
 
 	UpdateSimulationState(simState, deltaTime)
 
-	if simState.Bodies[0].P.X() <= 0 {
-		t.Errorf("Body[0] X is %f, expected > %f", simState.Bodies[0].P.X(), 0.0)
+	if simState.Bodies[0].P.X() <= -2 {
+		t.Errorf("Body[0] X is %f, expected > %f", simState.Bodies[0].P.X(), -2.0)
 	}
 
 	if simState.Bodies[0].P.Y() != 0 {
@@ -162,6 +164,7 @@ func TestSimulationBounds(t *testing.T) {
 
 	simState := &SimulationState{
 		GravityConstant: 1,
+		TimeScale:       1,
 		MaxVelocity:     10,
 		Bounds:          2,
 		Bodies:          bodies,
@@ -176,7 +179,7 @@ func TestSimulationBounds(t *testing.T) {
 }
 
 func TestStartSimulation(t *testing.T) {
-	state := CreateEmptySimulationState(10, 1, 100, 1000)
+	state := CreateEmptySimulationState(10, 1, 1, 10, 100, 1000)
 	delay := 16 * time.Millisecond
 	quit := make(chan bool)
 	updated := make(chan uint64)
@@ -264,6 +267,7 @@ func TestSimBodyAbsorb(t *testing.T) {
 
 	simState := &SimulationState{
 		GravityConstant: 1,
+		TimeScale:       1,
 		MaxVelocity:     10,
 		Bounds:          10,
 		Bodies:          bodies,
@@ -307,6 +311,7 @@ func benchmarkUpdateNPhysicsBodies(n int, b *testing.B) {
 
 	simState := &SimulationState{
 		GravityConstant: 1,
+		TimeScale:       1,
 		MaxVelocity:     0.1,
 		Bounds:          float32(n * 4),
 		Bodies:          bodies,
