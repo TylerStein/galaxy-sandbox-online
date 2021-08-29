@@ -20,18 +20,20 @@ type SimulationState struct {
 	TimeScale       float32
 	MassScale       float32
 	MaxVelocity     float32
+	DampScale       float32
 	Bounds          float32
 
 	Bodies []BodyData
 	IdPool idpool.IDPool
 }
 
-func CreateEmptySimulationState(maxBodies int, gravityConstant float32, timeScale float32, massScale float32, maxVelocity float32, bounds float32) *SimulationState {
+func CreateEmptySimulationState(maxBodies int, gravityConstant float32, timeScale float32, massScale float32, maxVelocity float32, bounds float32, dampening float32) *SimulationState {
 	return &SimulationState{
 		GravityConstant: gravityConstant,
 		TimeScale:       timeScale,
 		MassScale:       massScale,
 		MaxVelocity:     maxVelocity,
+		DampScale:       dampening,
 		Bounds:          bounds,
 		Bodies:          make([]BodyData, 0, maxBodies),
 		IdPool:          idpool.NewIDPool(maxBodies, 10),
@@ -176,11 +178,12 @@ func UpdateSimulationState(simState *SimulationState, deltaTime float32) {
 		}
 
 		forces = clampVectorMagnitude(forces, simState.MaxVelocity)
-		m2 := 1.0 / pow32(1.0+simState.Bodies[i].M, 2.0)
+		m2 := 1.0 / pow32(1.0+simState.Bodies[i].M, simState.DampScale)
+		// m2 := 1.0 / (1.0 + simState.Bodies[i].M*10.0)
 		simState.Bodies[i].V = clampVectorMagnitude(simState.Bodies[i].V.Add(forces.Mul(m2).Mul(deltaTime)), simState.MaxVelocity)
 	}
 
-	// use an empty struct map as a set
+	// use an empty struct map as a setsddsd
 	toRemoveMap := make(map[int]bool)
 	for i := 0; i < blen; i++ {
 		simState.Bodies[i].P = simState.Bodies[i].P.Add(simState.Bodies[i].V.Mul(deltaTime))

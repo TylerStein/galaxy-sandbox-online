@@ -25,7 +25,7 @@ func TestClampMagnitude(t *testing.T) {
 }
 
 func TestEmptySimulationState(t *testing.T) {
-	simState := CreateEmptySimulationState(10, 1, 1, 10, 100, 1000)
+	simState := CreateEmptySimulationState(10, 1, 1, 10, 100, 1000, 1)
 	if simState == nil {
 		t.Fatalf("SimulationState is nil, should be not nil")
 	}
@@ -179,7 +179,7 @@ func TestSimulationBounds(t *testing.T) {
 }
 
 func TestStartSimulation(t *testing.T) {
-	state := CreateEmptySimulationState(10, 1, 1, 10, 100, 1000)
+	state := CreateEmptySimulationState(10, 1, 1, 10, 100, 1000, 1)
 	delay := 16 * time.Millisecond
 	quit := make(chan bool)
 	updated := make(chan uint64)

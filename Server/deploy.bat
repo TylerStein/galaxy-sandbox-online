@@ -9,5 +9,6 @@ gcloud run deploy galaxy-sandbox-online ^
 --set-env-vars "MAX_VELOCITY=50" ^
 --set-env-vars "MAX_BOUNDS=100" ^
 --set-env-vars "GRAVITY=5" ^
---set-env-vars "TIME_SCALE=3.75" ^
---set-env-vars "MASS_SCALE=4"
+--set-env-vars "TIME_SCALE=2" ^
+--set-env-vars "MASS_SCALE=1.25" ^
+--set-env-vars "DAMP_SCALE=1.15"

@@ -19,6 +19,7 @@ const DefaultMaxBounds = float64(100)
 const DefaultGravity = float64(5)
 const DefaultTimescale = float64(3.75)
 const DefaultMassScale = float64(4)
+const DefaultDampening = float64(1.15)
 
 type FrameData struct {
 	P int            `json:"p"`
@@ -118,9 +119,10 @@ func main() {
 	gravity := parseEnvFloat32("GRAVITY", float32(DefaultGravity))
 	timescale := parseEnvFloat32("TIME_SCALE", float32(DefaultTimescale))
 	massScale := parseEnvFloat32("MASS_SCALE", float32(DefaultMassScale))
+	dampScale := parseEnvFloat32("DAMP_SCALE", float32(DefaultDampening))
 
 	var quit = make(chan bool)
-	var simState = sim.CreateEmptySimulationState(int(maxBodies), float32(gravity), float32(timescale), float32(massScale), float32(maxVelocity), float32(maxBounds))
+	var simState = sim.CreateEmptySimulationState(int(maxBodies), float32(gravity), float32(timescale), float32(massScale), float32(maxVelocity), float32(maxBounds), float32(dampScale))
 
 	fmt.Println("Starting server")
 

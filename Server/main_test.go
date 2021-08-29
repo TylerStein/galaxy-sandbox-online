@@ -11,7 +11,7 @@ import (
 )
 
 func TestSimulationAddBody(t *testing.T) {
-	state := sim.CreateEmptySimulationState(2, 1, 1, 10, 10, 100)
+	state := sim.CreateEmptySimulationState(2, 1, 1, 10, 10, 100, 1)
 	body := sim.BodyData{
 		P: mgl32.Vec2{0, 0},
 		V: mgl32.Vec2{0, 0},
@@ -40,7 +40,7 @@ func TestSimulationAddBody(t *testing.T) {
 }
 
 func TestSimulationReadUpdate(t *testing.T) {
-	state := sim.CreateEmptySimulationState(2, 1, 1, 10, 10, 100)
+	state := sim.CreateEmptySimulationState(2, 1, 1, 10, 10, 100, 1)
 	body := sim.BodyData{
 		P: mgl32.Vec2{123.456, -123.456},
 		V: mgl32.Vec2{987.654, -987.654},
